@@ -45,7 +45,7 @@ jobs:
       - name: Build Sail image
         run : |
           cd sail/runtimes/${{ matrix.php-version }}
-          docker build -t laravel-sail-php${{ matrix.php-version }} .
+          docker build --build-arg WWWGROUP=1010 -t laravel-sail-php${{ matrix.php-version }} .
 
       - name: Export image to tar
         run: |
