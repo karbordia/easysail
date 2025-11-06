@@ -43,11 +43,16 @@ jobs:
         run : |
           cd sail/runtimes/${{ matrix.php-version }}
           # ---------------- REMOVE NODE AND YARN -----------------------
-          sed -i -E 's/^[[:space:]]*(.*npm install -g npm.*)/#\1/' Dockerfile || true
-          sed -i -E 's/^[[:space:]]*(.*npm install -g bun.*)/#\1/' Dockerfile || true
-          sed -i -E 's/^[[:space:]]*(.*apt-get install -y yarn.*)/#\1/' Dockerfile || true
-          sed -i -E 's/^[[:space:]]*(.*apt-get install -y nodejs.*)/#\1/' Dockerfile || true
-          sed -i -E 's/^[[:space:]]*(.*npm install -g pnpm.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(ARG[[:space:]]+NODE_VERSION=.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*nodesource.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*npm install -g npm.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*npm install -g bun.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*apt-get install -y yarn.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*dl.yarnpkg.com.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*yarnpkg.com\/debian.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*apt-get install -y nodejs.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*npm install -g pnpm.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*npx playwright install-deps.*)/#\1/' Dockerfile || true
           # ---------------- END REMOVE NODE AND YARN -----------------------
           docker build --build-arg WWWGROUP=1010 -t laravel-sail-php${{ matrix.php-version }} .
 
