@@ -20,7 +20,7 @@ jobs:
   build:
     name: Build Laravel Sail (${{ matrix.php-version }}-${{ matrix.sail-type }})
     env:
-      Sail_type_name: ${{ matrix.sail-type == 'mini' && '-mini' || '' }}
+      sail_type_name: ${{ matrix.sail-type == 'mini' && '-mini' || '' }}
     runs-on: ubuntu-latest
     needs: prepare
     strategy:
@@ -58,18 +58,18 @@ jobs:
             sed -i -E 's/^[[:space:]]*(.*npx playwright install-deps.*)/#\1/' Dockerfile || true
             # ---------------- END REMOVE NODE AND YARN -----------------------
           fi
-          docker build --build-arg WWWGROUP=1010 -t laravel-sail-php${{ matrix.php-version }}$Sail_type_name .
+          docker build --build-arg WWWGROUP=1010 -t laravel-sail-php${{ matrix.php-version }}$sail_type_name .
 
       - name: Export image to tar
         run: |
           mkdir -p output
-          docker save laravel-sail-php${{ matrix.php-version }}$Sail_type_name -o output/laravel-sail-php${{ matrix.php-version }}$Sail_type_name.tar
+          docker save laravel-sail-php${{ matrix.php-version }}$sail_type_name -o output/laravel-sail-php${{ matrix.php-version }}$sail_type_name.tar
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sail-php${{ matrix.php-version }}$Sail_type_name
-          path: output/laravel-sail-php${{ matrix.php-version }}$Sail_type_name.tar
+          name: sail-php${{ matrix.php-version }}{{ env.sail_type_name }}
+          path: output/laravel-sail-php${{ matrix.php-version }}{{ env.sail_type_name }}.tar
 
   release:
     permissions:
