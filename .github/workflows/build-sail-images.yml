@@ -18,7 +18,7 @@ jobs:
           name: sail-source
           path: sail.tar.gz
   build:
-    name: Build Laravel Sail (${{ matrix.php-version }}${{ env.sail_type_name }})
+    name: Build Laravel Sail (${{ matrix.php-version }}${{ matrix.sail-type == 'mini' && '-mini' || '' }})
     env:
       sail_type_name: ${{ matrix.sail-type == 'mini' && '-mini' || '' }}
     runs-on: ubuntu-latest
