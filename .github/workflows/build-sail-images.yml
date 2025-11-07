@@ -1,0 +1,98 @@
+name: Build laravel Sail Docker Images
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    name: Prepare Laravel Sail source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone Laravel Sail repository
+        run: |
+          git clone https://github.com/laravel/sail.git
+          tar -czf sail.tar.gz sail
+      - name: Upload Sail source
+        uses: actions/upload-artifact@v4
+        with:
+          name: sail-source
+          path: sail.tar.gz
+  build:
+    name: Build Laravel Sail (${{ matrix.php-version }}${{ matrix.sail-type == 'mini' && '-mini' || '' }})
+    env:
+      sail_type_name: ${{ matrix.sail-type == 'mini' && '-mini' || '' }}
+    runs-on: ubuntu-latest
+    needs: prepare
+    strategy:
+      matrix:
+        php-version: ["8.0", "8.1", "8.2", "8.3", "8.4"]
+        sail-type: ["mini", "full"]
+    steps:
+      - name: Download Sail source
+        uses: actions/download-artifact@v4
+        with:
+          name: sail-source
+          path: .
+
+      - name: Extract Sail source
+        run: tar -xzf sail.tar.gz
+
+      - name : Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Sail image
+        run : |
+          cd sail/runtimes/${{ matrix.php-version }}
+          if [ ${{ matrix.sail-type }} == 'mini' ]; then
+            # ---------------- REMOVE NODE AND YARN -----------------------
+            sed -i -E 's/^[[:space:]]*(ARG[[:space:]]+NODE_VERSION=.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*nodesource.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*npm install -g npm.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*npm install -g bun.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*apt-get install -y yarn.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*dl.yarnpkg.com.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*yarnpkg.com\/debian.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*apt-get install -y nodejs.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*npm install -g pnpm.*)/#\1/' Dockerfile || true
+            sed -i -E 's/^[[:space:]]*(.*npx playwright install-deps.*)/#\1/' Dockerfile || true
+            # ---------------- END REMOVE NODE AND YARN -----------------------
+          fi
+          docker build --build-arg WWWGROUP=1010 -t laravel-sail-php${{ matrix.php-version }}$sail_type_name .
+
+      - name: Export image to tar
+        run: |
+          mkdir -p output
+          docker save laravel-sail-php${{ matrix.php-version }}$sail_type_name -o output/laravel-sail-php${{ matrix.php-version }}$sail_type_name.tar
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sail-php${{ matrix.php-version }}${{ env.sail_type_name }}
+          path: output/laravel-sail-php${{ matrix.php-version }}${{ env.sail_type_name }}.tar
+
+  release:
+    permissions:
+      contents: write
+    name: Publish to Github Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./release-files
+
+      - name: Compress TAR files to ZIP
+        run: |
+          cd release-files
+          find . -type f -name "*.tar" | while read file; do
+            zip "${file%.tar}.zip" "$file"
+            rm -f "$file"
+          done
+
+      - name: Create Github Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Laravel Sail Docker Images
+          files: ./release-files/**/*.zip
