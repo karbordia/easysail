@@ -23,7 +23,9 @@ jobs:
     needs: prepare
     strategy:
       matrix:
-        php-version: ["8.0", "8.1", "8.2", "8.3", "8.4"]
+        php-version: ["8.4"]
+        #php-version: ["8.0", "8.1", "8.2", "8.3", "8.4"]
+        sail-type: ["mini", "full"]
     steps:
       - name: Download Sail source
         uses: actions/download-artifact@v4
@@ -40,7 +42,8 @@ jobs:
       - name: Build Sail image
         run : |
           cd sail/runtimes/${{ matrix.php-version }}
-          # ---------------- REMOVE NODE AND YARN -----------------------
+          if [ ${{ matrix.sail-type }} == 'mini' ]; then
+            # ---------------- REMOVE NODE AND YARN -----------------------
             sed -i -E 's/^[[:space:]]*(ARG[[:space:]]+NODE_VERSION=.*)/#\1/' Dockerfile || true
             sed -i -E 's/^[[:space:]]*(.*nodesource.*)/#\1/' Dockerfile || true
             sed -i -E 's/^[[:space:]]*(.*npm install -g npm.*)/#\1/' Dockerfile || true
@@ -51,19 +54,20 @@ jobs:
             sed -i -E 's/^[[:space:]]*(.*apt-get install -y nodejs.*)/#\1/' Dockerfile || true
             sed -i -E 's/^[[:space:]]*(.*npm install -g pnpm.*)/#\1/' Dockerfile || true
             sed -i -E 's/^[[:space:]]*(.*npx playwright install-deps.*)/#\1/' Dockerfile || true
-          # ---------------- END REMOVE NODE AND YARN -----------------------
-          docker build --build-arg WWWGROUP=1010 -t laravel-sail-php${{ matrix.php-version }} .
+            # ---------------- END REMOVE NODE AND YARN -----------------------
+          fi
+          docker build --build-arg WWWGROUP=1010 -t laravel-sail-php${{ matrix.php-version }}-${{ matrix.sail-type }} .
 
       - name: Export image to tar
         run: |
           mkdir -p output
-          docker save laravel-sail-php${{ matrix.php-version }} -o output/laravel-sail-php${{ matrix.php-version }}.tar
+          docker save laravel-sail-php${{ matrix.php-version }}-${{ matrix.sail-type }} -o output/laravel-sail-php${{ matrix.php-version }}-${{ matrix.sail-type }}.tar
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sail-php${{ matrix.php-version }}
-          path: output/laravel-sail-php${{ matrix.php-version }}.tar
+          name: sail-php${{ matrix.php-version }}-${{ matrix.sail-type }}
+          path: output/laravel-sail-php${{ matrix.php-version }}-${{ matrix.sail-type }}.tar
 
   release:
     permissions:
