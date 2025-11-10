@@ -57,18 +57,18 @@ jobs:
             sed -i -E 's/^[[:space:]]*(.*npx playwright install-deps.*)/#\1/' Dockerfile || true
             # ---------------- END REMOVE NODE AND YARN -----------------------
           fi
-          docker build --build-arg WWWGROUP=1000 --build-arg WWWUSER=1000 -t laravel-sail-php${{ matrix.php-version }}$sail_type_name .
+          docker build --build-arg WWWGROUP=1000 --build-arg WWWUSER=1000 -t sail-${{ matrix.php-version }}/app$sail_type_name .
 
       - name: Export image to tar
         run: |
           mkdir -p output
-          docker save laravel-sail-php${{ matrix.php-version }}$sail_type_name -o output/laravel-sail-php${{ matrix.php-version }}$sail_type_name.tar
+          docker save sail-${{ matrix.php-version }}/app$sail_type_name -o output/sail-${{ matrix.php-version }}$sail_type_name.tar
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sail-php${{ matrix.php-version }}${{ env.sail_type_name }}
-          path: output/laravel-sail-php${{ matrix.php-version }}${{ env.sail_type_name }}.tar
+          name: sail-${{ matrix.php-version }}/app${{ env.sail_type_name }}
+          path: output/sail-${{ matrix.php-version }}${{ env.sail_type_name }}.tar
 
   release:
     permissions:
