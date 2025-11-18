@@ -77,6 +77,12 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Get latest Laravel Sail version
+        id: sail_version
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/laravel/sail/releases/latest | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+          echo "LATEST_SAIL_VERSION=$LATEST" >> $GITHUB_ENV
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -95,4 +101,7 @@ jobs:
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: Laravel Sail Docker Images
+          body: |
+            This release is built from **Laravel Sail ${{ env.LATEST_SAIL_VERSION }}**.
+            Generated automatically.
           files: ./release-files/**/*.zip
